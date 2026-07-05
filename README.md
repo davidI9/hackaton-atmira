@@ -18,5 +18,5 @@ docker compose up --build
 ## Variables de entorno
 
 - `DATABASE_URL`: cadena de conexión a PostgreSQL.
-- `ANTHROPIC_API_KEY`: clave para la API de Anthropic.
+- `GEMINI_API_KEY`: clave para la API de Gemini de Google AI Studio (consíguela en Google AI Studio > API keys).
 - `PORT`: puerto del backend.

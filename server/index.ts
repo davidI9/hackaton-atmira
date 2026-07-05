@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prisma } from './db.js';
 import { construirPromptDifusion, construirPromptEdicion } from './prompts.js';
-import { editarVistaConIA, generarVistaInicial, difundirVistaConIA } from './anthropic.js';
+import { editarVistaConIA, generarVistaInicial, difundirVistaConIA } from './gemini.js';
 import type { FormatoContenido, Proyecto, TipoVista, Vista, ApiResponse } from '../shared/domain.js';
 import type { Prisma, Proyecto as ProyectoPrisma, Vista as VistaPrisma } from '@prisma/client';
 import type { Request, Response } from 'express';
