@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoVista {
+  DOCUMENTACION
+  DIAGRAMA
+  OTRO
+}
+
+enum FormatoContenido {
+  MARKDOWN
+  MERMAID
+  TEXTO_PLANO
+}
+
+model Proyecto {
+  id            String   @id @default(uuid())
+  nombre        String
+  promptInicial String   @db.Text
+  creadoEn      DateTime @default(now())
+  actualizadoEn DateTime @updatedAt
+  vistas        Vista[]
+}
+
+model Vista {
+  id                        String           @id @default(uuid())
+  proyectoId                String
+  proyecto                  Proyecto         @relation(fields: [proyectoId], references: [id], onDelete: Cascade)
+  tipo                      TipoVista
+  nombre                    String
+  formato                   FormatoContenido
+  contenidoGuardado         String           @db.Text
+  contenidoModificado       String           @db.Text
+  tieneCambiosSinConfirmar  Boolean          @default(false)
+  creadoEn                  DateTime         @default(now())
+  actualizadoEn             DateTime         @updatedAt
+
+  @@index([proyectoId])
+}
