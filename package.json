@@ -15,14 +15,15 @@
     "prisma:push": "prisma db push"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.11.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "mermaid": "^11.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.3",
-    "mermaid": "^11.9.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {

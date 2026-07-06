@@ -1,96 +1,49 @@
-type GeminiArgs = {
-  prompt: string;
-  system: string;
-  formato: 'MARKDOWN' | 'MERMAID' | 'TEXTO_PLANO';
-};
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { TipoVista, FormatoContenido } from '@prisma/client';
+import dotenv from 'dotenv';
 
-function fallbackResponse(prompt: string, system: string, formato: GeminiArgs['formato']) {
-  const resumen = prompt.trim().slice(0, 240).replace(/\s+/g, ' ');
+dotenv.config();
 
-  if (formato === 'MARKDOWN') {
-    return `# Documento generado\n\n## Resumen\n${resumen}\n\n## Siguientes pasos\n- Refinar requisitos\n- Validar arquitectura\n- Iterar con feedback\n`;
-  }
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
+export async function generarVistaInicial(promptUsuario: string, formato: FormatoContenido): Promise<string> {
+  const instrucciones = formato === 'MARKDOWN'
+    ? 'Genera documentación técnica completa en formato Markdown que describa la especificación del sistema solicitado. Responde ÚNICAMENTE con el contenido Markdown, sin introducciones ni explicaciones.'
+    : 'Genera un diagrama en formato Mermaid que represente la arquitectura del sistema solicitado. Responde ÚNICAMENTE con el bloque de código Mermaid, sin explicaciones ni bloques de comillas Markdown al inicio o al final.';
+
+  const prompt = `${instrucciones}\n\nRequisito del usuario:\n${promptUsuario}`;
+  
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+  
+  // Limpiamos los backticks de markdown que suele meter la IA al generar código
   if (formato === 'MERMAID') {
-    return `flowchart TD\n  A[Usuario] --> B[Frontend]\n  B --> C[Backend]\n  C --> D[(PostgreSQL)]\n  C --> E[IA Generativa]\n  E --> C\n  C --> B\n`;
+      return text.replace(/```mermaid/g, '').replace(/```/g, '').trim();
   }
-
-  return `${system}\n\n${resumen}`;
+  return text.trim();
 }
 
-async function solicitarGemini({ prompt, system, formato }: GeminiArgs) {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-
-  if (!apiKey) {
-    return fallbackResponse(prompt, system, formato);
+export async function generarEdicion(contenidoActual: string, instruccionUsuario: string, formato: FormatoContenido): Promise<string> {
+  const prompt = `Contenido actual (formato ${formato}):\n\n${contenidoActual}\n\n---\n\nInstrucción de cambio solicitada por el usuario:\n${instruccionUsuario}\n\nDevuelve el contenido COMPLETO actualizado en formato ${formato}, aplicando el cambio solicitado. No incluyas explicaciones, solo el contenido resultante sin bloques de comillas extras.`;
+  
+  const result = await model.generateContent(prompt);
+  let text = result.response.text();
+  
+  if (formato === 'MERMAID') {
+      text = text.replace(/```mermaid/g, '').replace(/```/g, '').trim();
   }
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: system }]
-      },
-      contents: [{
-        role: 'user',
-        parts: [{ text: prompt }]
-      }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 4096
-      }
-    })
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Gemini respondió con ${response.status}: ${detail}`);
-  }
-
-  const data = (await response.json()) as {
-    candidates?: Array<{
-      content?: {
-        parts?: Array<{ text?: string }>;
-      };
-    }>;
-  };
-
-  const texto = data.candidates?.[0]?.content?.parts?.map((bloque) => bloque.text ?? '').join('\n').trim();
-  if (!texto) {
-    throw new Error('La IA devolvió una respuesta vacía');
-  }
-  return texto;
+  return text.trim();
 }
 
-export async function generarVistaInicial(promptUsuario: string, formato: 'MARKDOWN' | 'MERMAID') {
-  return solicitarGemini({
-    prompt: promptUsuario,
-    system: formato === 'MARKDOWN'
-      ? 'Genera documentación técnica completa en formato Markdown. Devuelve únicamente el Markdown final.'
-      : 'Genera un diagrama Mermaid que represente la arquitectura solicitada. Devuelve únicamente el bloque Mermaid final.',
-    formato
-  });
-}
-
-export async function editarVistaConIA(contenidoActual: string, instruccion: string, formato: 'MARKDOWN' | 'MERMAID' | 'TEXTO_PLANO') {
-  return solicitarGemini({
-    prompt: `${contenidoActual}\n\n---\n\n${instruccion}`,
-    system: formato === 'MARKDOWN'
-      ? 'Actualiza el contenido en Markdown devolviendo únicamente el documento completo actualizado.'
-      : formato === 'MERMAID'
-        ? 'Actualiza el diagrama Mermaid devolviendo únicamente el bloque completo actualizado.'
-        : 'Actualiza el texto devolviendo únicamente el contenido completo actualizado.',
-    formato
-  });
-}
-
-export async function difundirVistaConIA(contenidoOrigen: string, contenidoDestino: string, tipoOrigen: string, tipoDestino: string) {
-  return solicitarGemini({
-    prompt: `${contenidoOrigen}\n\n---\n\n${contenidoDestino}\n\n---\n\n${tipoOrigen} -> ${tipoDestino}`,
-    system: 'Actualiza el contenido de destino para reflejar la coherencia con el contenido de origen. Devuelve únicamente el contenido completo actualizado.',
-    formato: 'TEXTO_PLANO'
-  });
+export async function generarDifusion(contenidoModificadoOrigen: string, contenidoGuardadoDestino: string, tipoOrigen: TipoVista, tipoDestino: TipoVista, formatoDestino: FormatoContenido): Promise<string> {
+  const prompt = `Se ha modificado la vista de tipo "${tipoOrigen}" de un proyecto de diseño de software. Este es su contenido actualizado:\n\n${contenidoModificadoOrigen}\n\n---\n\nA continuación se muestra el contenido actual de la vista de tipo "${tipoDestino}", que debe mantenerse coherente con el cambio anterior:\n\n${contenidoGuardadoDestino}\n\n---\n\nActualiza el contenido de la vista "${tipoDestino}" para reflejar los cambios introducidos en la vista "${tipoOrigen}", manteniendo su formato y estructura original. Devuelve ÚNICAMENTE el contenido completo actualizado en formato ${formatoDestino} sin explicaciones extras.`;
+  
+  const result = await model.generateContent(prompt);
+  let text = result.response.text();
+  
+  if (formatoDestino === 'MERMAID') {
+      text = text.replace(/```mermaid/g, '').replace(/```/g, '').trim();
+  }
+  return text.trim();
 }
