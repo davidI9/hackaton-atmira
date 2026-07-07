@@ -1,14 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import prisma from './db';
-import { generarVistaInicial, generarEdicion, generarDifusion } from './gemini';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import prisma from './db.js';
+import { generarVistaInicial, generarEdicion, generarDifusion } from './gemini.js';
 
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, '../client');
 
 const PORT = process.env.PORT || 3000;
 
@@ -154,6 +160,16 @@ app.post('/api/proyectos/:proyectoId/vistas/:vistaId/difundir', async (req, res)
   } catch (error) {
     res.status(500).json({ ok: false, error: 'Error al difundir cambios' });
   }
+});
+
+app.use(express.static(clientDistPath));
+
+app.get(/^(?!\/api\/).*/, (req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
 app.listen(PORT, () => {

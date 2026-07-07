@@ -6,14 +6,14 @@ RUN apt-get update \
 	&& rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
-COPY package.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
 FROM deps AS build
 COPY . .
 RUN npm run prisma:generate && npm run build
 
-FROM node:20-bookworm-slim AS runtime
+FROM base AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules

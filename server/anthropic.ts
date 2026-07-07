@@ -1,1 +1,1 @@
-export { editarVistaConIA, difundirVistaConIA, generarVistaInicial } from './gemini.js';
+export { generarEdicion as editarVistaConIA, generarDifusion as difundirVistaConIA, generarVistaInicial } from './gemini.js';
