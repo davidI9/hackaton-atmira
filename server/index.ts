@@ -31,6 +31,24 @@ app.get('/api/proyectos', async (req, res) => {
   }
 });
 
+// 1b. Obtener un proyecto concreto
+app.get('/api/proyectos/:proyectoId', async (req, res) => {
+  try {
+    const proyecto = await prisma.proyecto.findUnique({
+      where: { id: req.params.proyectoId },
+      include: { vistas: true }
+    });
+
+    if (!proyecto) {
+      return res.status(404).json({ ok: false, error: 'Proyecto no encontrado' });
+    }
+
+    res.json({ ok: true, data: proyecto });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: 'Error al obtener el proyecto' });
+  }
+});
+
 // 2. Crear proyecto e inicializar vistas con IA
 app.post('/api/proyectos', async (req, res) => {
   const { nombre, promptInicial } = req.body;

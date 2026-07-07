@@ -20,6 +20,33 @@ button, input, textarea, select {
   font: inherit;
 }
 
-.prose pre {
-  white-space: pre-wrap;
+.markdown-content {
+  color: #e2e8f0;
+}
+
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-spacing: 0;
+}
+
+.markdown-content thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.markdown-content tbody tr:nth-child(odd) td {
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.markdown-content tbody tr:hover td {
+  background: rgba(124, 58, 237, 0.12);
 }
