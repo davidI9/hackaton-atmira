@@ -1,5 +1,5 @@
-export type TipoVista = 'DOCUMENTACION' | 'DIAGRAMA' | 'OTRO';
-export type FormatoContenido = 'MARKDOWN' | 'MERMAID' | 'TEXTO_PLANO';
+export type TipoVista = 'DOCUMENTACION' | 'DIAGRAMA' | 'MODELO_DATOS' | 'OTRO';
+export type FormatoContenido = 'MARKDOWN' | 'MERMAID' | 'JSON_COMPUESTO' | 'TEXTO_PLANO';
 
 export interface Vista {
   id: string;

@@ -18,6 +18,12 @@ const clientDistPath = path.resolve(__dirname, '../client');
 
 const PORT = process.env.PORT || 3000;
 
+interface ModeloDatosPayload {
+  diagramaMermaid: string;
+  scriptSQL: string;
+  esquemaJSON: string;
+}
+
 // 1. Obtener todos los proyectos
 app.get('/api/proyectos', async (req, res) => {
   try {
@@ -57,10 +63,24 @@ app.post('/api/proyectos', async (req, res) => {
   try {
     console.log(`[BACKEND] Solicitando a Gemini para el proyecto: ${nombre}`);
     
-    const [docContent, diagContent] = await Promise.all([
-      generarVistaInicial(promptInicial, 'MARKDOWN'),
-      generarVistaInicial(promptInicial, 'MERMAID')
+    const [docContent, diagContent, modeloDatosRaw] = await Promise.all([
+      generarVistaInicial(promptInicial, 'DOCUMENTACION', 'MARKDOWN'),
+      generarVistaInicial(promptInicial, 'DIAGRAMA', 'MERMAID'),
+      generarVistaInicial(promptInicial, 'MODELO_DATOS', 'JSON_COMPUESTO')
     ]);
+
+    let modeloDatos: ModeloDatosPayload;
+    try {
+      const parsed = JSON.parse(modeloDatosRaw) as Partial<ModeloDatosPayload>;
+      modeloDatos = {
+        diagramaMermaid: parsed.diagramaMermaid ?? '',
+        scriptSQL: parsed.scriptSQL ?? '',
+        esquemaJSON: parsed.esquemaJSON ?? ''
+      };
+    } catch (parseError) {
+      console.error('[ERROR MODELO_DATOS PARSE]:', parseError);
+      return res.status(500).json({ ok: false, error: 'La IA devolvio un modelo de datos invalido' });
+    }
     
     console.log(`[BACKEND] ¡Gemini contestó con éxito! Guardando en BD...`);
 
@@ -83,6 +103,13 @@ app.post('/api/proyectos', async (req, res) => {
               formato: 'MERMAID',
               contenidoGuardado: diagContent,
               contenidoModificado: diagContent
+            },
+            {
+              tipo: 'MODELO_DATOS',
+              nombre: 'Modelo de Datos',
+              formato: 'JSON_COMPUESTO',
+              contenidoGuardado: JSON.stringify(modeloDatos),
+              contenidoModificado: JSON.stringify(modeloDatos)
             }
           ]
         }
@@ -106,7 +133,7 @@ app.post('/api/proyectos/:proyectoId/vistas/:vistaId/editar', async (req, res) =
     const vistaActual = await prisma.vista.findUnique({ where: { id: vistaId } });
     if (!vistaActual) return res.status(404).json({ ok: false, error: 'Vista no encontrada' });
 
-    const nuevoContenido = await generarEdicion(vistaActual.contenidoModificado, instruccion, vistaActual.formato);
+    const nuevoContenido = await generarEdicion(vistaActual.contenidoModificado, instruccion, vistaActual.formato, vistaActual.tipo);
 
     const vistaActualizada = await prisma.vista.update({
       where: { id: vistaId },

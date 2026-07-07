@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Vista } from '../../../shared/domain';
 import { useAppStore } from '../store';
+import { DataModelViewer } from './DataModelViewer';
 import { MarkdownViewer } from './MarkdownViewer';
 import { MermaidViewer } from './MermaidViewer';
 
@@ -29,6 +30,24 @@ export function ProjectWorkspace() {
   }
 
   const otrasVistas = proyecto.vistas.filter((vista) => vista.id !== vistaActiva.id);
+
+  let modeloDatosContenido: { diagramaMermaid: string; scriptSQL: string; esquemaJSON: string } | null = null;
+  if (vistaActiva.formato === 'JSON_COMPUESTO') {
+    try {
+      const parsed = JSON.parse(vistaActiva.contenidoModificado) as Partial<{
+        diagramaMermaid: string;
+        scriptSQL: string;
+        esquemaJSON: string;
+      }>;
+      modeloDatosContenido = {
+        diagramaMermaid: parsed.diagramaMermaid ?? '',
+        scriptSQL: parsed.scriptSQL ?? '',
+        esquemaJSON: parsed.esquemaJSON ?? ''
+      };
+    } catch {
+      modeloDatosContenido = { diagramaMermaid: '', scriptSQL: '', esquemaJSON: '' };
+    }
+  }
 
   const enviarEdicion = async () => {
     if (!instruccion.trim()) return;
@@ -96,7 +115,17 @@ export function ProjectWorkspace() {
             {cargando ? <span className="text-sm text-slate-400">Procesando...</span> : null}
           </div>
           <div className="mt-4 min-h-[280px] rounded-3xl border border-white/10 bg-slate-950/80 p-5">
-            {vistaActiva.formato === 'MARKDOWN' ? <MarkdownViewer contenido={vistaActiva.contenidoModificado} /> : <MermaidViewer contenido={vistaActiva.contenidoModificado} />}
+            {vistaActiva.formato === 'MARKDOWN' ? (
+              <MarkdownViewer contenido={vistaActiva.contenidoModificado} />
+            ) : vistaActiva.formato === 'MERMAID' ? (
+              <MermaidViewer contenido={vistaActiva.contenidoModificado} />
+            ) : (
+              <DataModelViewer
+                diagramaMermaid={modeloDatosContenido?.diagramaMermaid ?? ''}
+                scriptSQL={modeloDatosContenido?.scriptSQL ?? ''}
+                esquemaJSON={modeloDatosContenido?.esquemaJSON ?? ''}
+              />
+            )}
           </div>
         </section>
 

@@ -10,12 +10,14 @@ datasource db {
 enum TipoVista {
   DOCUMENTACION
   DIAGRAMA
+  MODELO_DATOS
   OTRO
 }
 
 enum FormatoContenido {
   MARKDOWN
   MERMAID
+  JSON_COMPUESTO
   TEXTO_PLANO
 }
 
