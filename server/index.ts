@@ -217,6 +217,6 @@ app.get(/^(?!\/api\/).*/, (req, res, next) => {
   res.sendFile(path.join(clientDistPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor backend escuchando en http://localhost:${PORT}`);
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚀 Servidor backend escuchando en http://127.0.0.1:${PORT}`);
 });

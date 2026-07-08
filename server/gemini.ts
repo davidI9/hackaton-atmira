@@ -13,7 +13,7 @@ import {
 dotenv.config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 function limpiarContenidoSegunFormato(texto: string, formato: FormatoContenido): string {
   if (formato === 'MERMAID') {
